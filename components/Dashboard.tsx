@@ -1,4 +1,3 @@
-
 import React, { useRef, useEffect, useState } from 'react';
 import { TripSettings, DayItinerary, Trip, Expense, Flight, Activity, PrepItem, ViewState } from '../types';
 import DayDetail from './DayDetail';
@@ -34,12 +33,15 @@ const Dashboard: React.FC<Props> = ({
   const [downloadingPdf, setDownloadingPdf] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   
-  // Currency Logic
+  // Currency / AI 狀態
   const [isDetecting, setIsDetecting] = useState(false);
   const [showCurrencyEdit, setShowCurrencyEdit] = useState(false);
-  // FIX: Provide default value 0 if exchangeRate is undefined before toString
   const [tempRate, setTempRate] = useState((settings.exchangeRate ?? 0).toString());
   const [tempCurrency, setTempCurrency] = useState(settings.targetCurrency);
+
+  // AI 提示訊息＋簡單節流（避免連續狂點）
+  const [aiMessage, setAiMessage] = useState<string | null>(null);
+  const [lastDetectTime, setLastDetectTime] = useState<number | null>(null);
 
   const selectedDay = days.find(d => d.id === selectedDayId);
 
@@ -50,24 +52,26 @@ const Dashboard: React.FC<Props> = ({
     }
   }, [days, selectedDayId, onSelectDay]);
 
-  // Initial Auto Detect if Currency is missing (Fresh from Onboarding)
-  useEffect(() => {
-      const initDetect = async () => {
-          if ((!settings.targetCurrency || settings.exchangeRate === 0) && onUpdateSettings) {
-              setIsDetecting(true);
-              const result = await detectTripDetails(settings.destinations);
-              setIsDetecting(false);
-              if (result) {
-                  onUpdateSettings({
-                      ...settings,
-                      targetCurrency: result.currency,
-                      exchangeRate: result.rate
-                  });
-              }
-          }
-      };
-      initDetect();
-  }, []);
+  // 🚫 原本一進來就自動偵測匯率的 useEffect 先拿掉
+  // 之後完全改用「手動按鈕」＋節流來叫 AI
+  //
+  // useEffect(() => {
+  //   const initDetect = async () => {
+  //     if ((!settings.targetCurrency || settings.exchangeRate === 0) && onUpdateSettings) {
+  //       setIsDetecting(true);
+  //       const result = await detectTripDetails(settings.destinations);
+  //       setIsDetecting(false);
+  //       if (result) {
+  //         onUpdateSettings({
+  //           ...settings,
+  //           targetCurrency: result.currency,
+  //           exchangeRate: result.rate
+  //         });
+  //       }
+  //     }
+  //   };
+  //   initDetect();
+  // }, []);
 
   const formatDate = (dateStr: string) => {
     const d = new Date(dateStr);
@@ -107,22 +111,44 @@ const Dashboard: React.FC<Props> = ({
       }
   };
 
+  // ✨ 改版後：手動按鈕呼叫 AI，內建節流＋錯誤提示
   const handleAutoDetectCurrency = async () => {
+      if (!onUpdateSettings) return;
+
+      // 若剛好還在跑，就不要再送
+      if (isDetecting) return;
+
+      const now = Date.now();
+      if (lastDetectTime && now - lastDetectTime < 8000) {
+          // 8 秒內只允許一次，避免 429
+          setAiMessage('AI 正在休息一下，請幾秒後再點一次～');
+          return;
+      }
+
+      setLastDetectTime(now);
+      setAiMessage(null);
       setIsDetecting(true);
-      const result = await detectTripDetails(settings.destinations);
-      setIsDetecting(false);
-      if (result) {
-          setTempCurrency(result.currency);
-          setTempRate(result.rate.toString());
-          if (onUpdateSettings) {
+
+      try {
+          const result = await detectTripDetails(settings.destinations);
+          if (result && result.currency && result.rate) {
+              setTempCurrency(result.currency);
+              setTempRate(result.rate.toString());
               onUpdateSettings({
                   ...settings,
                   targetCurrency: result.currency,
                   exchangeRate: result.rate
               });
+              setAiMessage('已套用最新匯率。');
+          } else {
+              // geminiService 那邊如果遇到 429 會回傳 null
+              setAiMessage('現在暫時偵測不到匯率，可以手動輸入，或稍後再試一次。');
           }
-      } else {
-          alert('無法偵測匯率，請手動輸入。');
+      } catch (e) {
+          console.error(e);
+          setAiMessage('AI 呼叫暫時有問題，稍後再試看看。');
+      } finally {
+          setIsDetecting(false);
       }
   };
 
@@ -172,7 +198,7 @@ const Dashboard: React.FC<Props> = ({
                 <span>{days.length} Days</span>
                 {settings.travelerCount && <span>• {settings.travelerCount} Travelers</span>}
                 
-                {/* Moved Currency Settings Here */}
+                {/* Currency Settings */}
                 <div className="flex items-center gap-2 bg-white/60 px-2 py-1 rounded-md border border-ink-100">
                     {showCurrencyEdit ? (
                         <div className="flex items-center gap-2 animate-fade-in">
@@ -211,12 +237,28 @@ const Dashboard: React.FC<Props> = ({
                             )}
                         </div>
                     )}
-                    {!showCurrencyEdit && !isDetecting && (
-                        <button onClick={handleAutoDetectCurrency} className="text-ink-300 hover:text-accent-indigo p-1" title="Auto Detect Rate">
-                            <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21h5v-5"/></svg>
+                    {!showCurrencyEdit && (
+                        <button
+                          onClick={handleAutoDetectCurrency}
+                          className="text-ink-300 hover:text-accent-indigo p-1"
+                          title="Auto Detect Rate"
+                          disabled={isDetecting}
+                        >
+                            <svg className={`w-3 h-3 ${isDetecting ? "animate-spin" : ""}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                              <path d="M3 3v5h5"/>
+                              <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/>
+                              <path d="M16 21h5v-5"/>
+                            </svg>
                         </button>
                     )}
                 </div>
+
+                {aiMessage && (
+                  <span className="text-[10px] text-rose-500">
+                    {aiMessage}
+                  </span>
+                )}
             </div>
           </div>
       </div>
