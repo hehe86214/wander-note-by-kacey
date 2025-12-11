@@ -1,0 +1,8 @@
+{
+  "name": "wander note by kacey",
+  "description": "全方位的旅遊伴侶應用程式，提供行程管理、AI 收據記帳、即時翻譯與航班資訊整合。專為行動裝置設計的絕佳體驗。",
+  "requestFramePermissions": [
+    "camera",
+    "geolocation"
+  ]
+}

@@ -1,0 +1,135 @@
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
+    <meta name="theme-color" content="#F9F9F7" />
+    <title>NomadFlow</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=Noto+Serif+TC:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['"Noto Sans TC"', 'sans-serif'],
+              serif: ['"Noto Serif TC"', 'serif'],
+            },
+            colors: {
+              paper: '#F9F9F7',
+              ink: {
+                900: '#2b2b2b',
+                700: '#4a4a4a',
+                500: '#757575',
+                400: '#9e9e9e',
+                300: '#bdbdbd',
+                200: '#e0e0e0',
+                100: '#f5f5f5',
+                50: '#fafafa'
+              },
+              accent: {
+                matcha: '#8A9A5B',
+                sakura: '#E8D3D1',
+                indigo: '#3E517A',
+                wood: '#B08E75',
+                mustard: '#D7C49E',
+                teal: '#4B8E8D',      // New: Vibrant Teal
+                coral: '#E07A5F',     // New: Vibrant Coral
+                lavender: '#9D8CA1',  // New: Soft Lavender
+                ocean: '#5C80BC',     // New: Ocean Blue
+                sun: '#F2CC8F'        // New: Sun Yellow
+              }
+            },
+            boxShadow: {
+              'paper': '0 4px 20px rgba(0, 0, 0, 0.03)',
+              'float': '0 15px 35px rgba(0, 0, 0, 0.08)',
+              'up': '0 -5px 20px rgba(0,0,0,0.05)',
+            },
+            letterSpacing: {
+              tightest: '-.075em',
+              tighter: '-.05em',
+              tight: '-.025em',
+              normal: '0',
+              wide: '.025em',
+              wider: '.05em',
+              widest: '.25em',
+            },
+            animation: {
+                'fade-in': 'fadeIn 0.5s ease-out',
+                'slide-up': 'slideUp 0.4s ease-out',
+            },
+            keyframes: {
+                fadeIn: {
+                    '0%': { opacity: '0' },
+                    '100%': { opacity: '1' },
+                },
+                slideUp: {
+                    '0%': { transform: 'translateY(20px)', opacity: '0' },
+                    '100%': { transform: 'translateY(0)', opacity: '1' },
+                }
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      
+      body {
+        background-color: #F9F9F7;
+        color: #2b2b2b;
+        -webkit-tap-highlight-color: transparent;
+        font-weight: 400;
+        
+        background-image: 
+            url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E"),
+            radial-gradient(circle at 5% 10%, rgba(138, 154, 91, 0.12) 0%, transparent 40%),
+            radial-gradient(circle at 95% 90%, rgba(224, 122, 95, 0.1) 0%, transparent 45%), 
+            radial-gradient(circle at 90% 20%, rgba(62, 81, 122, 0.08) 0%, transparent 35%),
+            radial-gradient(circle at 10% 80%, rgba(75, 142, 141, 0.1) 0%, transparent 40%);
+            
+        background-attachment: fixed;
+        background-size: auto, auto, auto, auto, auto;
+        background-repeat: repeat, no-repeat, no-repeat, no-repeat, no-repeat;
+      }
+      
+      input[type="date"]::-webkit-calendar-picker-indicator {
+        opacity: 0.1;
+        cursor: pointer;
+      }
+      
+      /* Glassmorphism */
+      .glass {
+          background: rgba(255, 255, 255, 0.7);
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
+          border: 1px solid rgba(255, 255, 255, 0.5);
+      }
+
+      /* Prevent auto-zoom on mobile inputs */
+      @media screen and (max-width: 768px) {
+        input, select, textarea {
+          font-size: 16px !important;
+        }
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.1/",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.31.0",
+    "react/": "https://aistudiocdn.com/react@^19.2.1/",
+    "react": "https://aistudiocdn.com/react@^19.2.1"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body>
+    <div id="root" class="min-h-screen"></div>
+  <script type="module" src="/index.tsx"></script>
+</body>
+</html>
