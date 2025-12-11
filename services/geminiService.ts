@@ -2,8 +2,28 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { TripSettings } from "../types";
 
-const apiKey = process.env.API_KEY || '';
+// 同時支援 Vite（瀏覽器）、Node、GA Studio 的 API Key 來源
+const apiKey =
+  // ✅ 給 Vite / Cloudflare 用的（.env.local 裡的 VITE_API_KEY）
+  (typeof import.meta !== "undefined" &&
+    (import.meta as any).env &&
+    (import.meta as any).env.VITE_API_KEY) ||
+  // ✅ 如果在 Node 或其他環境（例如 GA Studio 背後）有這些也可以接到
+  (typeof process !== "undefined" &&
+    (process as any).env &&
+    ((process as any).env.GEMINI_API_KEY ||
+      (process as any).env.API_KEY)) ||
+  "";
+
+if (!apiKey) {
+  console.error("❌ 沒有設定 API Key，請確認 VITE_API_KEY / GEMINI_API_KEY / API_KEY 是否已設定。");
+}
+
+console.log("Gemini apiKey length =", apiKey ? apiKey.length : 0);
+
 const ai = new GoogleGenAI({ apiKey });
+
+
 
 // Simple In-Memory Cache
 const apiCache = new Map<string, any>();
